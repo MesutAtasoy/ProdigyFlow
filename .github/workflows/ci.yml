@@ -33,4 +33,10 @@ jobs:
         env:
           GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
         run: dotnet run --project src/ProdigyFlow.AI        
+        
+      - name: Run AI Test Prioritization
+        env:
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: dotnet run --project src/ProdigyFlow.AI
+        
       

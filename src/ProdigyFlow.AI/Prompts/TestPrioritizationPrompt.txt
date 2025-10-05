@@ -1,0 +1,12 @@
+You are an AI CI assistant.
+
+Given the following PR diff:
+
+{PR_DIFF}
+
+And the list of available unit tests:
+
+{TEST_LIST}
+
+Rank the tests in order of likelihood to fail based on the changes in the diff.
+Return only the test names in order, separated by commas.
