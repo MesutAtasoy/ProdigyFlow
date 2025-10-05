@@ -6,7 +6,7 @@ namespace ProdigyFlow.AI.Services;
 
 public class AIService
 {
-    private IChatCompletionService _chatCompletionService;
+    public IChatCompletionService _chatCompletionService;
     private Kernel _kernel;
 
     public async Task InitializeAsync()

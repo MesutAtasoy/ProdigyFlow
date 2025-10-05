@@ -16,4 +16,10 @@
       <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.65.0-alpha" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="Prompts\TestPrioritizationPrompt.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    
 </Project>

@@ -25,12 +25,21 @@ jobs:
 
       - name: Build solution
         run: dotnet build ProdigyFlow.sln --no-restore --configuration Release
+        
+      - name: Get PR diff
+        id: get_diff
+        run: |
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              curl -H "Accept: application/vnd.github.v3.diff" \
+                   ${{ github.event.pull_request.url }} \
+                   -o pr_diff.txt
+            else
+              git fetch origin main
+              git diff origin/main HEAD > pr_diff.txt
+            fi        
 
-      - name: Run unit tests
-        run: dotnet test ProdigyFlow.sln --no-build --configuration Release --logger "trx;LogFileName=test_results.trx"
-                
-      - name: Run AI PR Analysis
+      - name: Run AI Test Prioritization
         env:
-          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
-        run: dotnet run --project src/ProdigyFlow.AI        
+            GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: dotnet run --project src/ProdigyFlow.AI pr_diff.txt
       
