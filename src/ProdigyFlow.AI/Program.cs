@@ -24,7 +24,9 @@ var allTests = new List<string>
 };
 
 // Prioritize tests
-var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService, "Prompts/TestPrioritizationPrompt.txt");
+var promptPath = Path.Combine(AppContext.BaseDirectory, "Prompts", "TestPrioritizationPrompt.txt");
+
+var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService, promptPath);
 var prioritizedTests = await testPrioritizationService.PrioritizeTestsAsync(dummyDiff, allTests);
 
 Console.WriteLine("Prioritized Tests:");
