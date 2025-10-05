@@ -28,4 +28,9 @@ jobs:
 
       - name: Run unit tests
         run: dotnet test ProdigyFlow.sln --no-build --configuration Release --logger "trx;LogFileName=test_results.trx"
+                
+      - name: Run AI PR Analysis
+        env:
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: dotnet run --project src/ProdigyFlow.AI        
       

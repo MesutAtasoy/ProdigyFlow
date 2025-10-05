@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "tests\UnitTest
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProdigyFlow.Api", "src\ProdigyFlow.Api\ProdigyFlow.Api.csproj", "{4A50FD92-40B6-465F-A8E5-6C7C83EF2360}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProdigyFlow.AI", "src\ProdigyFlow.AI\ProdigyFlow.AI.csproj", "{787ED8FC-9413-457C-B9CC-20E571D62755}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,7 @@ Global
 		{215E9665-E740-4A57-AF7F-CBA19509BF96} = {AF4A46D3-3A25-4BE0-B8A9-B4C39D2777E3}
 		{2602EE2E-3F9C-42DE-A3BF-553A35EA4ECC} = {C73107E7-15AE-41C7-A6A3-7FC0B6990762}
 		{4A50FD92-40B6-465F-A8E5-6C7C83EF2360} = {AF4A46D3-3A25-4BE0-B8A9-B4C39D2777E3}
+		{787ED8FC-9413-457C-B9CC-20E571D62755} = {AF4A46D3-3A25-4BE0-B8A9-B4C39D2777E3}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{6E36EEA8-4324-4033-BED8-D2049FA52B27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -47,5 +50,9 @@ Global
 		{4A50FD92-40B6-465F-A8E5-6C7C83EF2360}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A50FD92-40B6-465F-A8E5-6C7C83EF2360}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A50FD92-40B6-465F-A8E5-6C7C83EF2360}.Release|Any CPU.Build.0 = Release|Any CPU
+		{787ED8FC-9413-457C-B9CC-20E571D62755}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{787ED8FC-9413-457C-B9CC-20E571D62755}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{787ED8FC-9413-457C-B9CC-20E571D62755}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{787ED8FC-9413-457C-B9CC-20E571D62755}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
