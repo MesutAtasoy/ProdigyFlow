@@ -19,7 +19,7 @@ public class ProductServiceTests
     [Fact]
     public async Task GetAllProducts_ReturnsAllProducts()
     {
-        _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Product> { new Product { Name = "Test" } });
+        _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Product> { new Product { Name = "Test" , Sku = "abc"} });
         var result = await _service.GetAllProductsAsync();
         Assert.Single(result);
     }
