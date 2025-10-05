@@ -1,4 +1,5 @@
-﻿using ProdigyFlow.AI.Services;
+﻿using System.Diagnostics;
+using ProdigyFlow.AI.Services;
 
 Console.WriteLine("Starting ProdigyFlow AI...");
 
@@ -29,13 +30,31 @@ Console.WriteLine($"PR Summary: {summary}");
 decimal risk = await aiService.ComputeRiskScoreAsync(prDiff);
 Console.WriteLine($"Risk Score: {risk}");
 
-var allTests = new List<string>
+var testProcess = new Process
 {
-    "ProductService_AddProduct_Test",
-    "ProductService_GetAllProducts_Test",
-    "CategoryService_AddCategory_Test",
-    "CategoryService_GetAllCategories_Test"
+    StartInfo = new ProcessStartInfo
+    {
+        FileName = "dotnet",
+        Arguments = "test ProdigyFlow.sln --list-tests --no-build --configuration Release",
+        RedirectStandardOutput = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    }
 };
+
+testProcess.Start();
+var output = testProcess.StandardOutput.ReadToEnd();
+testProcess.WaitForExit();
+
+// Parse test names (skip headers)
+var allTests = output
+    .Split('\n')
+    .Select(t => t.Trim())
+    .Where(t => !string.IsNullOrWhiteSpace(t) && !t.StartsWith("The following"))
+    .ToList();
+
+Console.WriteLine("Discovered Tests:");
+Console.WriteLine(string.Join("\n", allTests));
 
 // Prioritize tests
 var promptPath = Path.Combine(AppContext.BaseDirectory, "Prompts", "TestPrioritizationPrompt.txt");
