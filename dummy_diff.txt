@@ -1,0 +1,13 @@
+diff --git a/src/ProdigyFlow.Core/Models/Product.cs b/src/ProdigyFlow.Core/Models/Product.cs
+new file mode 100644
+index 0000000..e69de29
++namespace ProdigyFlow.Core.Models
++{
++    public class Product
++    {
++        public int Id { get; set; }
++        public string Name { get; set; }
++        public int CategoryId { get; set; }
++    }
++}
+...
