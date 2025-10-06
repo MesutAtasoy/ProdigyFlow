@@ -72,25 +72,17 @@ jobs:
           RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi)
           TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi)
 
-          COMMENT_BODY=$(cat <<EOF
-          ## 🤖 ProdigyFlow AI Insights
-
-          **Summary:**
-          $SUMMARY
-
-          **Risk Score:** $RISK
-
-          **Prioritized Tests:**
-          \`\`\`
-          $TESTS
-          \`\`\`
-
-          _Posted automatically by ProdigyFlow AI Assistant._
-          EOF
+          COMMENT_BODY=$(jq -n \
+            --arg summary "$SUMMARY" \
+            --arg risk "$RISK" \
+            --arg tests "$TESTS" \
+            '{
+              body: "## 🤖 ProdigyFlow AI Insights\n\n**Summary:**\n\($summary)\n\n**Risk Score:** \($risk)\n\n**Prioritized Tests:**\n```\n\($tests)\n```\n\n_Posted automatically by ProdigyFlow AI Assistant._"
+            }'
           )
 
           echo "Posting comment to PR..."
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
                -H "Content-Type: application/json" \
-               -d "{\"body\": \"$COMMENT_BODY\"}" \
-               ${{ github.event.pull_request.comments_url }}          
+               -d "$COMMENT_BODY" \
+               "${{ github.event.pull_request.comments_url }}" 
