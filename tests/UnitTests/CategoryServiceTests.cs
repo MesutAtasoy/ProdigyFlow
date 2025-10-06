@@ -93,16 +93,40 @@ public class CategoryServiceTests
         _mockRepo.Verify(r => r.UpdateAsync(category), Times.Once);
     }
 
+    
     [Fact]
-    public async Task DeleteCategory_CallsRepository()
+    public async Task DeleteCategoryAsync_CallsRepository_WhenCategoryExists()
     {
         // Arrange
-        var id = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var category = new Category { Id = categoryId, Name = "Test Category" };
+
+        _mockRepo.Setup(r => r.GetByIdAsync(categoryId))
+            .ReturnsAsync(category);
+
+        _mockRepo.Setup(r => r.DeleteAsync(categoryId))
+            .Returns(Task.CompletedTask);
 
         // Act
-        await _service.DeleteCategoryAsync(id);
+        await _service.DeleteCategoryAsync(categoryId);
 
         // Assert
-        _mockRepo.Verify(r => r.DeleteAsync(id), Times.Once);
+        _mockRepo.Verify(r => r.DeleteAsync(categoryId), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_DoesNotCallRepository_WhenCategoryDoesNotExist()
+    {
+        // Arrange
+        var categoryId = Guid.NewGuid();
+
+        _mockRepo.Setup(r => r.GetByIdAsync(categoryId))
+            .ReturnsAsync((Category?)null);
+
+        // Act
+        await _service.DeleteCategoryAsync(categoryId);
+
+        // Assert
+        _mockRepo.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
     }
 }

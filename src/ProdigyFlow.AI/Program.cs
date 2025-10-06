@@ -18,9 +18,7 @@ if (!File.Exists(prDiffFile))
     return;
 }
 
-string prDiff =
-    "This PR adds a `Barcode` property to the `Product` entity, the `ProductCreateRequest` DTO, and the API endpoint for creating products. Unit tests are updated to include the barcode in the product setup.  This allows the API to accept and store barcode information for products.";
-//File.ReadAllText(prDiffFile);
+string prDiff = File.ReadAllText(prDiffFile);
 
 var aiService = new AIService();
 await aiService.InitializeAsync();
