@@ -1,12 +1,14 @@
 name: ProdigyFlow CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -43,3 +45,60 @@ jobs:
             GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
         run: dotnet run --project src/ProdigyFlow.AI pr_diff.txt
       
+      - name: Run prioritized tests
+        run: |
+          PRIORITIZED_TESTS_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/prioritized_tests.txt"
+          echo "Running prioritized tests from $PRIORITIZED_TESTS_FILE"
+          if [ -f "$PRIORITIZED_TESTS_FILE" ]; then
+            while read testName; do
+              echo "Running test: $testName"
+              dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName"
+            done < "$PRIORITIZED_TESTS_FILE"
+          else
+            echo "No prioritized tests found. Running all tests."
+            dotnet test ProdigyFlow.sln --no-build --configuration Release
+          fi
+          
+      - name: Post AI Insights as PR Comment
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Searching for AI output files..."
+          SUMMARY_FILE=$(find . -type f -name "ai_summary.txt" | head -n 1)
+          RISK_FILE=$(find . -type f -name "ai_risk.txt" | head -n 1)
+          TESTS_FILE=$(find . -type f -name "prioritized_tests.txt" | head -n 1)
+
+          echo "Summary file: $SUMMARY_FILE"
+          echo "Risk file: $RISK_FILE"
+          echo "Tests file: $TESTS_FILE"
+
+          SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi)
+          RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi)
+          TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi)
+
+          COMMENT_BODY=$(jq -n \
+            --arg summary "$SUMMARY" \
+            --arg risk "$RISK" \
+            --arg tests "$TESTS" \
+            '{
+              body: "## 🤖 ProdigyFlow AI Insights\n\n**Summary:**\n\($summary)\n\n**Risk Score:** \($risk)\n\n**Prioritized Tests:**\n```\n\($tests)\n```\n\n_Posted automatically by ProdigyFlow AI Assistant._"
+            }'
+          )
+
+          echo "Posting comment to PR..."
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+               -H "Content-Type: application/json" \
+               -d "$COMMENT_BODY" \
+               "${{ github.event.pull_request.comments_url }}"
+
+      - name: Add AI Review Label
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s -X POST \
+               -H "Authorization: token $GITHUB_TOKEN" \
+               -H "Accept: application/vnd.github+json" \
+               "${{ github.event.pull_request.issue_url }}/labels" \
+               -d '{"labels":["ai-review-done"]}'
