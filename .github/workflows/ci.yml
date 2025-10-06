@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -54,3 +58,39 @@ jobs:
             echo "No prioritized tests found. Running all tests."
             dotnet test ProdigyFlow.sln --no-build --configuration Release
           fi
+          
+      - name: Post AI Insights as PR Comment
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SUMMARY_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/ai_summary.txt"
+          RISK_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/ai_risk.txt"
+          TESTS_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/prioritized_tests.txt"
+
+          SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi)
+          RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi)
+          TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi)
+
+          COMMENT_BODY=$(cat <<EOF
+          ## 🤖 ProdigyFlow AI Insights
+
+          **Summary:**
+          $SUMMARY
+
+          **Risk Score:** $RISK
+
+          **Prioritized Tests:**
+          \`\`\`
+          $TESTS
+          \`\`\`
+
+          _Posted automatically by ProdigyFlow AI Assistant._
+          EOF
+          )
+
+          echo "Posting comment to PR..."
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+               -H "Content-Type: application/json" \
+               -d "{\"body\": \"$COMMENT_BODY\"}" \
+               ${{ github.event.pull_request.comments_url }}          
