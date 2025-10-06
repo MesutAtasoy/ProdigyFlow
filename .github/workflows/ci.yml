@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -22,76 +22,128 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # ------------------------
+      # Start timer for build
+      # ------------------------
+      - name: Set start time
+        id: start_time
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+
       - name: Restore dependencies
         run: dotnet restore ProdigyFlow.sln
 
       - name: Build solution
         run: dotnet build ProdigyFlow.sln --no-restore --configuration Release
-        
+
+      # ------------------------
+      # Capture build duration
+      # ------------------------
+      - name: Capture build duration
+        id: build_duration
+        run: |
+          BUILD_END_TIME=$(date +%s)
+          BUILD_DURATION=$((BUILD_END_TIME - $START_TIME))
+          echo "BUILD_DURATION_SECONDS=$BUILD_DURATION" >> $GITHUB_ENV
+          echo "Build duration: $BUILD_DURATION seconds"
+
+      # ------------------------
+      # Get PR diff
+      # ------------------------
       - name: Get PR diff
         id: get_diff
         run: |
-            if [ "${{ github.event_name }}" == "pull_request" ]; then
-              curl -H "Accept: application/vnd.github.v3.diff" \
-                   ${{ github.event.pull_request.url }} \
-                   -o pr_diff.txt
-            else
-              git fetch origin main
-              git diff origin/main HEAD > pr_diff.txt
-            fi        
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            curl -H "Accept: application/vnd.github.v3.diff" \
+                 ${{ github.event.pull_request.url }} \
+                 -o pr_diff.txt
+          else
+            git fetch origin main
+            git diff origin/main HEAD > pr_diff.txt
+          fi
 
+      # ------------------------
+      # Run AI Test Prioritization
+      # ------------------------
       - name: Run AI Test Prioritization
         env:
-            GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
-        run: dotnet run --project src/ProdigyFlow.AI --configuration Release pr_diff.txt
-      
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: dotnet run --project src/ProdigyFlow.AI --configuration Release TestPrioritization pr_diff.txt
+
+      # ------------------------
+      # Run prioritized tests and capture test metrics
+      # ------------------------
       - name: Run prioritized tests
+        id: run_tests
         run: |
           PRIORITIZED_TESTS_FILE=$(find src/ProdigyFlow.AI/bin -type f -name "prioritized_tests.txt" | head -n 1)
-          echo "Running prioritized tests from $PRIORITIZED_TESTS_FILE"
+          TEST_START=$(date +%s)
+          FAILED_TESTS=0
+
           if [ -f "$PRIORITIZED_TESTS_FILE" ]; then
             while read testName; do
               echo "Running test: $testName"
-              dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName"
+              dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName" || FAILED_TESTS=$((FAILED_TESTS+1))
             done < "$PRIORITIZED_TESTS_FILE"
           else
             echo "No prioritized tests found. Running all tests."
-            dotnet test ProdigyFlow.sln --no-build --configuration Release
+            dotnet test ProdigyFlow.sln --no-build --configuration Release || FAILED_TESTS=$((FAILED_TESTS+1))
           fi
-          
+
+          TEST_END=$(date +%s)
+          TEST_DURATION=$((TEST_END - TEST_START))
+
+          echo "TEST_DURATION_SECONDS=$TEST_DURATION" >> $GITHUB_ENV
+          echo "FAILED_TESTS_COUNT=$FAILED_TESTS" >> $GITHUB_ENV
+          echo "Test duration: $TEST_DURATION seconds"
+          echo "Failed tests: $FAILED_TESTS"
+
+      # ------------------------
+      # Run Anomaly Detection
+      # ------------------------
+      - name: Run AI Anomaly Detection
+        env:
+          BUILD_DURATION_SECONDS: ${{ env.BUILD_DURATION_SECONDS }}
+          TEST_DURATION_SECONDS: ${{ env.TEST_DURATION_SECONDS }}
+          FAILED_TESTS_COUNT: ${{ env.FAILED_TESTS_COUNT }}
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: dotnet run --project src/ProdigyFlow.AI --configuration Release AnomalyDetection pr_diff.txt
+
+      # ------------------------
+      # Post AI Insights as PR Comment
+      # ------------------------
       - name: Post AI Insights as PR Comment
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Searching for AI output files..."
           SUMMARY_FILE=$(find . -type f -name "ai_summary.txt" | head -n 1)
           RISK_FILE=$(find . -type f -name "ai_risk.txt" | head -n 1)
           TESTS_FILE=$(find . -type f -name "prioritized_tests.txt" | head -n 1)
-
-          echo "Summary file: $SUMMARY_FILE"
-          echo "Risk file: $RISK_FILE"
-          echo "Tests file: $TESTS_FILE"
+          ANOMALY_FILE=$(find . -type f -name "ai_anomaly.txt" | head -n 1)
 
           SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi)
           RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi)
           TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi)
+          ANOMALY=$(if [ -f "$ANOMALY_FILE" ]; then cat "$ANOMALY_FILE"; else echo "No anomaly data."; fi)
 
           COMMENT_BODY=$(jq -n \
             --arg summary "$SUMMARY" \
             --arg risk "$RISK" \
             --arg tests "$TESTS" \
+            --arg anomaly "$ANOMALY" \
             '{
-              body: "## 🤖 ProdigyFlow AI Insights\n\n**Summary:**\n\($summary)\n\n**Risk Score:** \($risk)\n\n**Prioritized Tests:**\n```\n\($tests)\n```\n\n_Posted automatically by ProdigyFlow AI Assistant._"
+              body: "## 🤖 ProdigyFlow AI Insights\n\n**Summary:**\n\($summary)\n\n**Risk Score:** \($risk)\n\n**Prioritized Tests:**\n```\n\($tests)\n```\n\n**Pipeline Anomaly:**\n```\n\($anomaly)\n```\n\n_Posted automatically by ProdigyFlow AI Assistant._"
             }'
           )
 
-          echo "Posting comment to PR..."
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
                -H "Content-Type: application/json" \
                -d "$COMMENT_BODY" \
                "${{ github.event.pull_request.comments_url }}"
 
+      # ------------------------
+      # Add AI Review Label
+      # ------------------------
       - name: Add AI Review Label
         if: github.event_name == 'pull_request'
         env:
