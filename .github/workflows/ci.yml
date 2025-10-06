@@ -68,7 +68,7 @@ jobs:
         env:
           GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
         run: dotnet run --project src/ProdigyFlow.AI --configuration Release TestPrioritization pr_diff.txt
-
+  
       # ------------------------
       # Run prioritized tests and capture test metrics
       # ------------------------
@@ -78,20 +78,28 @@ jobs:
           PRIORITIZED_TESTS_FILE=$(find src/ProdigyFlow.AI/bin -type f -name "prioritized_tests.txt" | head -n 1)
           TEST_START=$(date +%s)
           FAILED_TESTS=0
-
+          
           if [ -f "$PRIORITIZED_TESTS_FILE" ]; then
-            while read testName; do
-              echo "Running test: $testName"
-              dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName" || FAILED_TESTS=$((FAILED_TESTS+1))
-            done < "$PRIORITIZED_TESTS_FILE"
+            # Check if file is empty
+            if [ ! -s "$PRIORITIZED_TESTS_FILE" ]; then
+              echo "Prioritized tests file is empty. Running all tests."
+              dotnet test ProdigyFlow.sln --no-build --configuration Release || FAILED_TESTS=$((FAILED_TESTS+1))
+            else
+              while read testName; do
+                testName=$(echo "$testName" | xargs) # Trim spaces
+                [ -z "$testName" ] && continue        # Skip empty lines
+                echo "Running test: $testName"
+                dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName" || FAILED_TESTS=$((FAILED_TESTS+1))
+              done < "$PRIORITIZED_TESTS_FILE"
+            fi
           else
-            echo "No prioritized tests found. Running all tests."
+            echo "No prioritized tests file found. Running all tests."
             dotnet test ProdigyFlow.sln --no-build --configuration Release || FAILED_TESTS=$((FAILED_TESTS+1))
           fi
-
+          
           TEST_END=$(date +%s)
           TEST_DURATION=$((TEST_END - TEST_START))
-
+          
           echo "TEST_DURATION_SECONDS=$TEST_DURATION" >> $GITHUB_ENV
           echo "FAILED_TESTS_COUNT=$FAILED_TESTS" >> $GITHUB_ENV
           echo "Test duration: $TEST_DURATION seconds"
