@@ -92,3 +92,13 @@ jobs:
                -d "$COMMENT_BODY" \
                "${{ github.event.pull_request.comments_url }}"
 
+      - name: Add AI Review Label
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s -X POST \
+               -H "Authorization: token $GITHUB_TOKEN" \
+               -H "Accept: application/vnd.github+json" \
+               "${{ github.event.pull_request.issue_url }}/labels" \
+               -d '{"labels":["ai-review-done"]}'
