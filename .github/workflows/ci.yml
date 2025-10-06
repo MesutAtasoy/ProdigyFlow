@@ -43,3 +43,16 @@ jobs:
             GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
         run: dotnet run --project src/ProdigyFlow.AI pr_diff.txt
       
+      - name: Run prioritized tests
+        run: |
+          PRIORITIZED_TESTS_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/prioritized_tests.txt"
+          echo "Running prioritized tests from $PRIORITIZED_TESTS_FILE"
+          if [ -f "$PRIORITIZED_TESTS_FILE" ]; then
+            while read testName; do
+              echo "Running test: $testName"
+              dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName"
+            done < "$PRIORITIZED_TESTS_FILE"
+          else
+            echo "No prioritized tests found. Running all tests."
+            dotnet test ProdigyFlow.sln --no-build --configuration Release
+          fi
