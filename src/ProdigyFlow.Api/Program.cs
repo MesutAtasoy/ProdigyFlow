@@ -52,4 +52,39 @@ app.MapPut("/products/{id}", async (Guid id, [FromBody]Product product, ProductS
 
 app.MapDelete("/products/{id}", async (Guid id, ProductService service) => await service.DeleteProductAsync(id));
 
+app.MapGet("/categories", async (CategoryService service) => await service.GetAllCategoriesAsync())
+    .WithOpenApi();
+
+app.MapGet("/categories/{id}", async (Guid id, CategoryService service) => await service.GetCategoryAsync(id))
+    .WithOpenApi();
+
+app.MapPost("/categories", async ([FromBody] CategoryCreateRequest request, CategoryService service) =>
+    {
+        var category = new Category
+        {
+            Name = request.Name
+        };
+
+        await service.AddCategoryAsync(category);
+    })
+    .WithOpenApi();
+
+app.MapPut("/categories/{id}", async (Guid id, [FromBody] CategoryUpdateRequest request, CategoryService service) =>
+    {
+        var category = new Category
+        {
+            Id = id,
+            Name = request.Name
+        };
+
+        await service.UpdateCategoryAsync(category);
+    })
+    .WithOpenApi();
+
+app.MapDelete("/categories/{id}", async (Guid id, CategoryService service) =>
+    {
+        await service.DeleteCategoryAsync(id);
+    })
+    .WithOpenApi();
+
 app.Run();
