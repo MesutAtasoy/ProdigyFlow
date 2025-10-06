@@ -1,4 +1,5 @@
 using ProdigyFlow.Domain.Entities;
+using ProdigyFlow.Domain.Entities.Categories;
 
 namespace ProdigyFlow.Domain.Repositories;
 

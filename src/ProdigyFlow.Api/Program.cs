@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using ProdigyFlow.Application;
 using ProdigyFlow.Application.Services;
+using ProdigyFlow.Application.Services.Category;
+using ProdigyFlow.Application.Services.Product;
 using ProdigyFlow.Domain.Entities;
+using ProdigyFlow.Domain.Entities.Categories;
+using ProdigyFlow.Domain.Entities.Products;
 using ProdigyFlow.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,7 +41,8 @@ app.MapPost("/products", async ([FromBody] ProductCreateRequest request, [FromSe
             Name = request.Name,
             Description = request.Description,
             Price = request.Price,
-            Sku = request.Sku
+            Sku = request.Sku,
+            Barcode = request.Barcode
         };
 
         await service.AddProductAsync(product);
