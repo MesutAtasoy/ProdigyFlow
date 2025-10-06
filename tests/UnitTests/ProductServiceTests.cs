@@ -22,7 +22,7 @@ public class ProductServiceTests
         // Arrange
         var products = new List<Product>
         {
-            new Product { Name = "Test Product", Sku = "ABC123" }
+            new Product { Name = "Test Product", Sku = "ABC123", Barcode = "123"}
         };
         _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(products);
 
@@ -38,7 +38,7 @@ public class ProductServiceTests
     public async Task GetProduct_ReturnsProduct_WhenExists()
     {
         // Arrange
-        var product = new Product { Id = Guid.NewGuid(), Name = "Laptop", Sku = "LAP123" };
+        var product = new Product { Id = Guid.NewGuid(), Name = "Laptop", Sku = "LAP123" ,Barcode = "123"};
         _mockRepo.Setup(r => r.GetByIdAsync(product.Id)).ReturnsAsync(product);
 
         // Act

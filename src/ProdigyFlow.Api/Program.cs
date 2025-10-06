@@ -37,7 +37,8 @@ app.MapPost("/products", async ([FromBody] ProductCreateRequest request, [FromSe
             Name = request.Name,
             Description = request.Description,
             Price = request.Price,
-            Sku = request.Sku
+            Sku = request.Sku,
+            Barcode = request.Barcode
         };
 
         await service.AddProductAsync(product);
