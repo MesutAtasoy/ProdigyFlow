@@ -15,5 +15,11 @@ public class CategoryService
     public Task<Domain.Entities.Categories.Category?> GetCategoryAsync(Guid id) => _repository.GetByIdAsync(id);
     public Task AddCategoryAsync(Domain.Entities.Categories.Category category) => _repository.AddAsync(category);
     public Task UpdateCategoryAsync(Domain.Entities.Categories.Category category) => _repository.UpdateAsync(category);
-    public Task DeleteCategoryAsync(Guid id) => _repository.DeleteAsync(id);
+    public async Task DeleteCategoryAsync(Guid id)
+    {
+        var category = await _repository.GetByIdAsync(id);
+
+        if (category is not null)
+            _repository.DeleteAsync(id);
+    }
 }
