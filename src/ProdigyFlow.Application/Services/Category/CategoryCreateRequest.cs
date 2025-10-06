@@ -1,4 +1,4 @@
-namespace ProdigyFlow.Application.Services;
+namespace ProdigyFlow.Application.Services.Category;
 
 public class CategoryCreateRequest
 {

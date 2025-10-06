@@ -1,6 +1,8 @@
 using Moq;
 using ProdigyFlow.Application.Services;
+using ProdigyFlow.Application.Services.Product;
 using ProdigyFlow.Domain.Entities;
+using ProdigyFlow.Domain.Entities.Products;
 using ProdigyFlow.Domain.Repositories;
 
 namespace UnitTests;

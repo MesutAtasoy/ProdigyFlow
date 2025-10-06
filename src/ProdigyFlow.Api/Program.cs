@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using ProdigyFlow.Application;
 using ProdigyFlow.Application.Services;
+using ProdigyFlow.Application.Services.Category;
+using ProdigyFlow.Application.Services.Product;
 using ProdigyFlow.Domain.Entities;
+using ProdigyFlow.Domain.Entities.Categories;
+using ProdigyFlow.Domain.Entities.Products;
 using ProdigyFlow.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);

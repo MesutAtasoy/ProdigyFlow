@@ -1,4 +1,6 @@
-namespace ProdigyFlow.Domain.Entities;
+using ProdigyFlow.Domain.Entities.Products;
+
+namespace ProdigyFlow.Domain.Entities.Categories;
 
 public class Category
 {

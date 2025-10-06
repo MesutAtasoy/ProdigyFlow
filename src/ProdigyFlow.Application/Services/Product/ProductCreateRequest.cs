@@ -1,4 +1,4 @@
-namespace ProdigyFlow.Application;
+namespace ProdigyFlow.Application.Services.Product;
 
 public class ProductCreateRequest
 {

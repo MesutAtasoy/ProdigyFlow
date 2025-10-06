@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProdigyFlow.Domain.Entities;
+using ProdigyFlow.Domain.Entities.Categories;
+using ProdigyFlow.Domain.Entities.Products;
 
 namespace ProdigyFlow.Infrastructure;
 
