@@ -68,14 +68,14 @@ jobs:
           RISK_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/ai_risk.txt"
           TESTS_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/prioritized_tests.txt"
 
-          SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi)
-          RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi)
-          TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi)
+          SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi | jq -Rs .)
+          RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi | jq -Rs .)
+          TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi | jq -Rs .)
 
           COMMENT_BODY=$(jq -n \
-            --arg summary "$SUMMARY" \
-            --arg risk "$RISK" \
-            --arg tests "$TESTS" \
+            --arg summary "$(echo $SUMMARY | jq -r .)" \
+            --arg risk "$(echo $RISK | jq -r .)" \
+            --arg tests "$(echo $TESTS | jq -r .)" \
             '{
               body: "## 🤖 ProdigyFlow AI Insights\n\n**Summary:**\n\($summary)\n\n**Risk Score:** \($risk)\n\n**Prioritized Tests:**\n```\n\($tests)\n```\n\n_Posted automatically by ProdigyFlow AI Assistant._"
             }'
@@ -85,4 +85,4 @@ jobs:
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
                -H "Content-Type: application/json" \
                -d "$COMMENT_BODY" \
-               "${{ github.event.pull_request.comments_url }}" 
+               "${{ github.event.pull_request.comments_url }}"
