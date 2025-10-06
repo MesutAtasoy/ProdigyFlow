@@ -64,18 +64,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SUMMARY_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/ai_summary.txt"
-          RISK_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/ai_risk.txt"
-          TESTS_FILE="src/ProdigyFlow.AI/bin/Release/net8.0/prioritized_tests.txt"
+          echo "Searching for AI output files..."
+          SUMMARY_FILE=$(find . -type f -name "ai_summary.txt" | head -n 1)
+          RISK_FILE=$(find . -type f -name "ai_risk.txt" | head -n 1)
+          TESTS_FILE=$(find . -type f -name "prioritized_tests.txt" | head -n 1)
 
-          SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi | jq -Rs .)
-          RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi | jq -Rs .)
-          TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi | jq -Rs .)
+          echo "Summary file: $SUMMARY_FILE"
+          echo "Risk file: $RISK_FILE"
+          echo "Tests file: $TESTS_FILE"
+
+          SUMMARY=$(if [ -f "$SUMMARY_FILE" ]; then cat "$SUMMARY_FILE"; else echo "No summary generated."; fi)
+          RISK=$(if [ -f "$RISK_FILE" ]; then cat "$RISK_FILE"; else echo "Unknown"; fi)
+          TESTS=$(if [ -f "$TESTS_FILE" ]; then cat "$TESTS_FILE"; else echo "No tests prioritized."; fi)
 
           COMMENT_BODY=$(jq -n \
-            --arg summary "$(echo $SUMMARY | jq -r .)" \
-            --arg risk "$(echo $RISK | jq -r .)" \
-            --arg tests "$(echo $TESTS | jq -r .)" \
+            --arg summary "$SUMMARY" \
+            --arg risk "$RISK" \
+            --arg tests "$TESTS" \
             '{
               body: "## 🤖 ProdigyFlow AI Insights\n\n**Summary:**\n\($summary)\n\n**Risk Score:** \($risk)\n\n**Prioritized Tests:**\n```\n\($tests)\n```\n\n_Posted automatically by ProdigyFlow AI Assistant._"
             }'
@@ -86,3 +91,4 @@ jobs:
                -H "Content-Type: application/json" \
                -d "$COMMENT_BODY" \
                "${{ github.event.pull_request.comments_url }}"
+
