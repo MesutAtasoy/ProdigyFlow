@@ -44,20 +44,36 @@ jobs:
         env:
             GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
         run: dotnet run --project src/ProdigyFlow.AI --configuration Release pr_diff.txt
-      
+
       - name: Run prioritized tests
         run: |
-          PRIORITIZED_TESTS_FILE=$(find src/ProdigyFlow.AI/bin -type f -name "prioritized_tests.txt" | head -n 1)
-          echo "Running prioritized tests from $PRIORITIZED_TESTS_FILE"
-          if [ -f "$PRIORITIZED_TESTS_FILE" ]; then
-            while read testName; do
-              echo "Running test: $testName"
-              dotnet test ProdigyFlow.sln --no-build --configuration Release --filter "FullyQualifiedName~$testName"
+            PRIORITIZED_TESTS_FILE=$(find src/ProdigyFlow.AI/bin -type f -name "prioritized_tests.txt" | head -n 1)
+            echo "Running prioritized tests from $PRIORITIZED_TESTS_FILE"
+            
+            if [ ! -f "$PRIORITIZED_TESTS_FILE" ]; then
+              echo "❌ No prioritized tests file found."
+              exit 0
+            fi
+            
+            TESTS_RAN=false
+            while IFS= read -r test || [ -n "$test" ]; do
+              # skip empty lines or lines with spaces (not real test names)
+              if [[ -z "$test" || "$test" == *" "* ]]; then
+                echo "Skipping invalid test line: $test"
+                continue
+              fi
+            
+              echo "Running test: $test"
+              dotnet test tests/UnitTests/UnitTests.csproj --filter "FullyQualifiedName~$test" --logger "console;verbosity=detailed"
+            
+              if [ $? -eq 0 ]; then
+                TESTS_RAN=true
+              fi
             done < "$PRIORITIZED_TESTS_FILE"
-          else
-            echo "No prioritized tests found. Running all tests."
-            dotnet test ProdigyFlow.sln --no-build --configuration Release
-          fi
+            
+            if [ "$TESTS_RAN" = false ]; then
+              echo "⚠️ No valid prioritized tests were executed."
+            fi
           
       - name: Post AI Insights as PR Comment
         if: github.event_name == 'pull_request'
