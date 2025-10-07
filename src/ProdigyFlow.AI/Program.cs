@@ -24,6 +24,8 @@ await aiService.InitializeAsync();
 
 var fileService = new FileService();
 
+Console.WriteLine($"PR Diff: {prDiff}");
+
 
 // Summarize PR
 string summary = await aiService.SummarizePRAsync(prDiff);
