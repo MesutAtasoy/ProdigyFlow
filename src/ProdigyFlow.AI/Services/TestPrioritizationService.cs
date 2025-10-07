@@ -7,10 +7,10 @@ public class TestPrioritizationService
     private readonly IChatCompletionService _chat;
     private readonly string _promptTemplate;
 
-    public TestPrioritizationService(IChatCompletionService chat, string promptPath)
+    public TestPrioritizationService(IChatCompletionService chat)
     {
         _chat = chat;
-        _promptTemplate = File.ReadAllText(promptPath);
+        _promptTemplate = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Prompts", "TestPrioritizationPrompt.txt"));
     }
 
     public async Task<List<string>> PrioritizeTestsAsync(string prDiff, List<string> testList)

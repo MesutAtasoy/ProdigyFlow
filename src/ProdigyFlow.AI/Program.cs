@@ -20,22 +20,22 @@ if (!File.Exists(prDiffFile))
 string prDiff = File.ReadAllText(prDiffFile);
 
 var aiService = new AIService();
-await aiService.InitializeAsync();
-
 var fileService = new FileService();
 
-Console.WriteLine($"PR Diff: {prDiff}");
+await aiService.InitializeAsync();
 
 
 // Summarize PR
-string summary = await aiService.SummarizePRAsync(prDiff);
+var summarizePRService = new SummarizePRService(aiService._chatCompletionService);
+string summary = await summarizePRService.SummarizeAsync(prDiff);
 Console.WriteLine($"PR Summary: {summary}");
 await fileService.WriteFileAsync("ai_summary.txt", summary);
 
 // Compute Risk Score
-decimal risk = await aiService.ComputeRiskScoreAsync(prDiff);
-Console.WriteLine($"Risk Score: {risk}");
-await fileService.WriteFileAsync("ai_risk.txt", risk.ToString());
+var riskScoreService = new RiskScoreService(aiService._chatCompletionService);
+var risk = await riskScoreService.ComputeRiskScoreAsync(prDiff);
+Console.WriteLine($"Risk: {risk}");
+await fileService.WriteFileAsync("ai_risk.txt", risk);
 
 var testProcess = new Process
 {
@@ -64,8 +64,7 @@ Console.WriteLine("Discovered Tests:");
 Console.WriteLine(string.Join("\n", allTests));
 
 // Prioritize tests
-var testPrioritizationPrompt = Path.Combine(AppContext.BaseDirectory, "Prompts", "TestPrioritizationPrompt.txt");
-var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService, testPrioritizationPrompt);
+var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService);
 var prioritizedTests = await testPrioritizationService.PrioritizeTestsAsync(prDiff, allTests);
 
 // Save prioritized tests to output file for GitHub Actions

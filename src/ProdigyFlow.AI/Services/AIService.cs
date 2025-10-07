@@ -23,43 +23,4 @@ public class AIService
         
         await Task.CompletedTask;
     }
-
-    public async Task<string> SummarizePRAsync(string prDiff)
-    {
-        // Load prompt from file or inline
-        ChatHistory history = [];
-        history.AddUserMessage($"Summarize the following PR diff in a short summary:\n{prDiff}");
-
-        try
-        {
-            var response = await _chatCompletionService.GetChatMessageContentAsync(
-                history,
-                kernel: _kernel
-            );
-        
-        
-            return response.Content;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
-    public async Task<decimal> ComputeRiskScoreAsync(string prDiff)
-    {
-        ChatHistory history = [];
-        history.AddUserMessage( $"Analyze the risk of this PR diff (0-100):\n{prDiff}");
-        
-        var result = await _chatCompletionService.GetChatMessageContentAsync(
-            history,
-            kernel: _kernel
-        );
-
-        if (decimal.TryParse(result.Content.Trim(), out var score))
-            return score;
-
-        return 0; // fallback
-    }
 }
