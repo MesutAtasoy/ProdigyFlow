@@ -19,10 +19,22 @@ public class TestPrioritizationService
             .Replace("{PR_DIFF}", prDiff)
             .Replace("{TEST_LIST}", string.Join(", ", testList));
 
+        // Get AI response
         var result = await _chat.GetChatMessageContentsAsync(prompt);
 
-        var prioritized = result.FirstOrDefault()?.Content?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        var rawOutput = result.FirstOrDefault()?.Content ?? string.Empty;
+
+        // Sanitize output: keep only valid test names
+        var prioritized = rawOutput
+            .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
             .Select(t => t.Trim())
+            .Where(t =>
+                    !string.IsNullOrWhiteSpace(t) &&
+                    !t.Contains(' ') && // filter out any stray text
+                    t.Length > 3 &&
+                    testList.Contains(t) // must exist in actual test list
+            )
+            .Distinct()
             .ToList();
 
         return prioritized;
