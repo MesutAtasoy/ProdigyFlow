@@ -52,7 +52,6 @@ public class AIService
         ChatHistory history = [];
         history.AddUserMessage( $"Analyze the risk of this PR diff (0-100):\n{prDiff}");
         
-        
         var result = await _chatCompletionService.GetChatMessageContentAsync(
             history,
             kernel: _kernel

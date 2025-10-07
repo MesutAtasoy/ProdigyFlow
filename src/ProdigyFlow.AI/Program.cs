@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Globalization;
 using ProdigyFlow.AI.Services;
 
 Console.WriteLine("Starting ProdigyFlow AI...");
@@ -23,18 +22,18 @@ string prDiff = File.ReadAllText(prDiffFile);
 var aiService = new AIService();
 await aiService.InitializeAsync();
 
+var fileService = new FileService();
+
+
 // Summarize PR
 string summary = await aiService.SummarizePRAsync(prDiff);
 Console.WriteLine($"PR Summary: {summary}");
-var summaryFilePath = Path.Combine(AppContext.BaseDirectory, "ai_summary.txt");
-await File.WriteAllLinesAsync(summaryFilePath, new List<string> { summary });
-
+await fileService.WriteFileAsync("ai_summary.txt", summary);
 
 // Compute Risk Score
 decimal risk = await aiService.ComputeRiskScoreAsync(prDiff);
 Console.WriteLine($"Risk Score: {risk}");
-var riskFilePath = Path.Combine(AppContext.BaseDirectory, "ai_risk.txt");
-await File.WriteAllLinesAsync(riskFilePath, new List<string> { risk.ToString() });
+await fileService.WriteFileAsync("ai_risk.txt", risk.ToString());
 
 var testProcess = new Process
 {
@@ -68,9 +67,4 @@ var testPrioritizationService = new TestPrioritizationService(aiService._chatCom
 var prioritizedTests = await testPrioritizationService.PrioritizeTestsAsync(prDiff, allTests);
 
 // Save prioritized tests to output file for GitHub Actions
-var outputFile = Path.Combine(AppContext.BaseDirectory, "prioritized_tests.txt");
-await File.WriteAllLinesAsync(outputFile, prioritizedTests);
-
-Console.WriteLine($"Prioritized tests saved to: {outputFile}");
-Console.WriteLine("Tests to run:");
-Console.WriteLine(string.Join("\n", prioritizedTests));
+await fileService.WriteFileAsync("prioritized_tests.txt", prioritizedTests);
