@@ -40,7 +40,7 @@ public class ProductServiceTests
     public async Task GetProduct_ReturnsProduct_WhenExists()
     {
         // Arrange
-        var product = new Product { Id = Guid.NewGuid(), Name = "Laptop", Sku = "LAP123" ,Barcode = "123"};
+        var product = new Product { Id = Guid.NewGuid(), Name = "Laptop", Sku = "LAP123" ,Barcode = "123", Image = "image1" };
         _mockRepo.Setup(r => r.GetByIdAsync(product.Id)).ReturnsAsync(product);
 
         // Act
@@ -68,21 +68,29 @@ public class ProductServiceTests
     [Fact]
     public async Task AddProduct_CallsRepository()
     {
-        // Arrange
-        var product = new Product { Name = "Tablet", Sku = "TAB123" };
+        var product = new Product
+        {
+            Name = "Tablet",
+            Sku = "TAB123",
+            Image = "image1"
+        };
 
         // Act
         await _service.AddProductAsync(product);
 
         // Assert
-        _mockRepo.Verify(r => r.AddAsync(product), Times.Once);
+        _mockRepo.Verify(r => r.AddAsync(It.Is<Product>(p =>
+            p.Name == "Tablet" &&
+            p.Sku == "TAB123" &&
+            p.Image == "image1"
+        )), Times.Once);
     }
 
     [Fact]
     public async Task UpdateProduct_CallsRepository()
     {
         // Arrange
-        var product = new Product { Id = Guid.NewGuid(), Name = "Monitor", Sku = "MON123" };
+        var product = new Product { Id = Guid.NewGuid(), Name = "Monitor", Sku = "MON123" , Image = "image1"  };
 
         // Act
         await _service.UpdateProductAsync(product);
