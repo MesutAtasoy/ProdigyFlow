@@ -37,28 +37,9 @@ var risk = await riskScoreService.ComputeRiskScoreAsync(prDiff);
 Console.WriteLine($"Risk: {risk}");
 await fileService.WriteFileAsync("ai_risk.txt", risk);
 
-var testProcess = new Process
-{
-    StartInfo = new ProcessStartInfo
-    {
-        FileName = "dotnet",
-        Arguments = "test ProdigyFlow.sln --list-tests --no-build --configuration Release",
-        RedirectStandardOutput = true,
-        UseShellExecute = false,
-        CreateNoWindow = true
-    }
-};
-
-testProcess.Start();
-var output = testProcess.StandardOutput.ReadToEnd();
-testProcess.WaitForExit();
-
-// Parse test names (skip headers)
-var allTests = output
-    .Split('\n')
-    .Select(t => t.Trim())
-    .Where(t => !string.IsNullOrWhiteSpace(t) && !t.StartsWith("The following"))
-    .ToList();
+// Unit tests
+var unitTestService = new UnitTestService();
+var allTests = unitTestService.GetDiscoveredTests();;
 
 Console.WriteLine("Discovered Tests:");
 Console.WriteLine(string.Join("\n", allTests));
