@@ -18,4 +18,4 @@ Format your response in provided format:
 }
 
 PR Diff:
-{prDiff}
+{PR_DIFF}
