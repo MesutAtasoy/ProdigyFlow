@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using ProdigyFlow.AI.Services;
+﻿using ProdigyFlow.AI.Services;
 
 Console.WriteLine("Starting ProdigyFlow AI...");
 
@@ -23,13 +22,12 @@ Console.WriteLine($"prDiff: {prDiff}");
 
 
 var aiService = new AIService();
+await aiService.InitializeAsync();
+
 var fileService = new FileService();
 var unitTestService = new UnitTestService();
 var summarizePrService = new SummarizePRService(aiService._chatCompletionService);
 var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService);
-
-await aiService.InitializeAsync();
-
 
 // Summarize PR
 string summary = await summarizePrService.SummarizeAsync(prDiff);
