@@ -19,15 +19,20 @@ if (!File.Exists(prDiffFile))
 
 string prDiff = File.ReadAllText(prDiffFile);
 
+Console.WriteLine($"prDiff: {prDiff}");
+
+
 var aiService = new AIService();
 var fileService = new FileService();
+var unitTestService = new UnitTestService();
+var summarizePrService = new SummarizePRService(aiService._chatCompletionService);
+var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService);
 
 await aiService.InitializeAsync();
 
 
 // Summarize PR
-var summarizePRService = new SummarizePRService(aiService._chatCompletionService);
-string summary = await summarizePRService.SummarizeAsync(prDiff);
+string summary = await summarizePrService.SummarizeAsync(prDiff);
 Console.WriteLine($"PR Summary: {summary}");
 await fileService.WriteFileAsync("ai_summary.txt", summary);
 
@@ -38,14 +43,12 @@ Console.WriteLine($"Risk: {risk}");
 await fileService.WriteFileAsync("ai_risk.txt", risk);
 
 // Unit tests
-var unitTestService = new UnitTestService();
 var allTests = unitTestService.GetDiscoveredTests();;
 
 Console.WriteLine("Discovered Tests:");
 Console.WriteLine(string.Join("\n", allTests));
 
 // Prioritize tests
-var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService);
 var prioritizedTests = await testPrioritizationService.PrioritizeTestsAsync(prDiff, allTests);
 
 // Save prioritized tests to output file for GitHub Actions
