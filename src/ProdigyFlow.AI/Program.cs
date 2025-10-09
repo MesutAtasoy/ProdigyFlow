@@ -1,53 +1,52 @@
-﻿using ProdigyFlow.AI.Services;
+﻿using Microsoft.SemanticKernel;
+using ProdigyFlow.AI.Factories;
+using ProdigyFlow.AI.Plugins;
+using ProdigyFlow.AI.Services;
 
 Console.WriteLine("Starting ProdigyFlow AI...");
 
-
-if (args.Length == 0)
-{
-    Console.WriteLine("Error: PR diff file is required as argument.");
+var prDiffFile = GetValidPrDiffPath(args);
+if (prDiffFile is null) 
     return;
-}
-
-string prDiffFile = args[0];
-if (!File.Exists(prDiffFile))
-{
-    Console.WriteLine($"Error: PR diff file not found: {prDiffFile}");
-    return;
-}
 
 string prDiff = File.ReadAllText(prDiffFile);
 
-Console.WriteLine($"prDiff: {prDiff}");
+IKernelFactory kernelFactory = new DefaultKernelFactory(); // or inject via DI
+var kernel = kernelFactory.CreateKernel();
 
+kernel.ImportPluginFromObject(new PRAnalysisPlugin(kernel), "PRAnalysis");
+kernel.ImportPluginFromObject(new TestDiscoveryPlugin(), "TestDiscovery");
+kernel.ImportPluginFromObject(new TestPrioritizationPlugin(kernel), "TestPrioritization");
 
-var aiService = new AIService();
-await aiService.InitializeAsync();
 
 var fileService = new FileService();
-var unitTestService = new UnitTestService();
-var summarizePrService = new SummarizePRService(aiService._chatCompletionService);
-var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService);
 
 // Summarize PR
-string summary = await summarizePrService.SummarizeAsync(prDiff);
-Console.WriteLine($"PR Summary: {summary}");
-await fileService.WriteFileAsync("ai_summary.txt", summary);
+var summaryResult = await kernel.InvokeAsync<string>("PRAnalysis", "SummarizePR", new() { ["prDiff"] = prDiff });
+await fileService.WriteFileAsync("ai_summary.txt", summaryResult);
 
-// Compute Risk Score
-var riskScoreService = new RiskScoreService(aiService._chatCompletionService);
-var risk = await riskScoreService.ComputeRiskScoreAsync(prDiff);
-Console.WriteLine($"Risk: {risk}");
-await fileService.WriteFileAsync("ai_risk.txt", risk);
+var riskResult = await kernel.InvokeAsync<string>("PRAnalysis", "ComputeRiskScore", new() { ["prDiff"] = prDiff });
+await fileService.WriteFileAsync("ai_risk.txt", riskResult);
 
-// Unit tests
-var allTests = unitTestService.GetDiscoveredTests();;
+var allTests = await kernel.InvokeAsync<List<string>>("TestDiscovery", "DiscoverTests");
+var prioritizedResult = await kernel.InvokeAsync<List<string>>("TestPrioritization", "PrioritizeTests", new() { ["prDiff"] = prDiff, ["testList"] = string.Join(",", allTests) });
+await fileService.WriteFileAsync("prioritized_tests.txt", prioritizedResult);
 
-Console.WriteLine("Discovered Tests:");
-Console.WriteLine(string.Join("\n", allTests));
 
-// Prioritize tests
-var prioritizedTests = await testPrioritizationService.PrioritizeTestsAsync(prDiff, allTests);
+static string? GetValidPrDiffPath(string[] args)
+{
+    if (args.Length == 0)
+    {
+        Console.WriteLine("Error: PR diff file is required as argument.");
+        return null;
+    }
 
-// Save prioritized tests to output file for GitHub Actions
-await fileService.WriteFileAsync("prioritized_tests.txt", prioritizedTests);
+    string filePath = args[0];
+    if (!File.Exists(filePath))
+    {
+        Console.WriteLine($"Error: PR diff file not found: {filePath}");
+        return null;
+    }
+
+    return filePath;
+}
