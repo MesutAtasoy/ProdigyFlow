@@ -5,24 +5,11 @@ using ProdigyFlow.AI.Services;
 
 Console.WriteLine("Starting ProdigyFlow AI...");
 
-
-if (args.Length == 0)
-{
-    Console.WriteLine("Error: PR diff file is required as argument.");
+var prDiffFile = GetValidPrDiffPath(args);
+if (prDiffFile is null) 
     return;
-}
-
-string prDiffFile = args[0];
-if (!File.Exists(prDiffFile))
-{
-    Console.WriteLine($"Error: PR diff file not found: {prDiffFile}");
-    return;
-}
 
 string prDiff = File.ReadAllText(prDiffFile);
-
-Console.WriteLine($"prDiff: {prDiff}");
-
 
 IKernelFactory kernelFactory = new DefaultKernelFactory(); // or inject via DI
 var kernel = kernelFactory.CreateKernel();
@@ -42,10 +29,24 @@ var riskResult = await kernel.InvokeAsync<string>("PRAnalysis", "ComputeRiskScor
 await fileService.WriteFileAsync("ai_risk.txt", riskResult);
 
 var allTests = await kernel.InvokeAsync<List<string>>("TestDiscovery", "DiscoverTests");
-Console.WriteLine($"✅ Discovered {allTests.Count} tests.");
-
-// Prioritize tests
 var prioritizedResult = await kernel.InvokeAsync<List<string>>("TestPrioritization", "PrioritizeTests", new() { ["prDiff"] = prDiff, ["testList"] = string.Join(",", allTests) });
-
-// Save prioritized tests to output file for GitHub Actions
 await fileService.WriteFileAsync("prioritized_tests.txt", prioritizedResult);
+
+
+static string? GetValidPrDiffPath(string[] args)
+{
+    if (args.Length == 0)
+    {
+        Console.WriteLine("Error: PR diff file is required as argument.");
+        return null;
+    }
+
+    string filePath = args[0];
+    if (!File.Exists(filePath))
+    {
+        Console.WriteLine($"Error: PR diff file not found: {filePath}");
+        return null;
+    }
+
+    return filePath;
+}
