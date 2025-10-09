@@ -1,4 +1,7 @@
-﻿using ProdigyFlow.AI.Services;
+﻿using Microsoft.SemanticKernel;
+using ProdigyFlow.AI.Factories;
+using ProdigyFlow.AI.Plugins;
+using ProdigyFlow.AI.Services;
 
 Console.WriteLine("Starting ProdigyFlow AI...");
 
@@ -21,33 +24,28 @@ string prDiff = File.ReadAllText(prDiffFile);
 Console.WriteLine($"prDiff: {prDiff}");
 
 
-var aiService = new AIService();
-await aiService.InitializeAsync();
+IKernelFactory kernelFactory = new DefaultKernelFactory(); // or inject via DI
+var kernel = kernelFactory.CreateKernel();
+
+kernel.ImportPluginFromObject(new PRAnalysisPlugin(kernel), "PRAnalysis");
+kernel.ImportPluginFromObject(new TestDiscoveryPlugin(), "TestDiscovery");
+kernel.ImportPluginFromObject(new TestPrioritizationPlugin(kernel), "TestPrioritization");
+
 
 var fileService = new FileService();
-var unitTestService = new UnitTestService();
-var summarizePrService = new SummarizePRService(aiService._chatCompletionService);
-var testPrioritizationService = new TestPrioritizationService(aiService._chatCompletionService);
 
 // Summarize PR
-string summary = await summarizePrService.SummarizeAsync(prDiff);
-Console.WriteLine($"PR Summary: {summary}");
-await fileService.WriteFileAsync("ai_summary.txt", summary);
+var summaryResult = await kernel.InvokeAsync<string>("PRAnalysis", "SummarizePR", new() { ["prDiff"] = prDiff });
+await fileService.WriteFileAsync("ai_summary.txt", summaryResult);
 
-// Compute Risk Score
-var riskScoreService = new RiskScoreService(aiService._chatCompletionService);
-var risk = await riskScoreService.ComputeRiskScoreAsync(prDiff);
-Console.WriteLine($"Risk: {risk}");
-await fileService.WriteFileAsync("ai_risk.txt", risk);
+var riskResult = await kernel.InvokeAsync<string>("PRAnalysis", "ComputeRiskScore", new() { ["prDiff"] = prDiff });
+await fileService.WriteFileAsync("ai_risk.txt", riskResult);
 
-// Unit tests
-var allTests = unitTestService.GetDiscoveredTests();;
-
-Console.WriteLine("Discovered Tests:");
-Console.WriteLine(string.Join("\n", allTests));
+var allTests = await kernel.InvokeAsync<List<string>>("TestDiscovery", "DiscoverTests");
+Console.WriteLine($"✅ Discovered {allTests.Count} tests.");
 
 // Prioritize tests
-var prioritizedTests = await testPrioritizationService.PrioritizeTestsAsync(prDiff, allTests);
+var prioritizedResult = await kernel.InvokeAsync<List<string>>("TestPrioritization", "PrioritizeTests", new() { ["prDiff"] = prDiff, ["testList"] = string.Join(",", allTests) });
 
 // Save prioritized tests to output file for GitHub Actions
-await fileService.WriteFileAsync("prioritized_tests.txt", prioritizedTests);
+await fileService.WriteFileAsync("prioritized_tests.txt", prioritizedResult);
